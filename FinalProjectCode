@@ -1,0 +1,104 @@
+#QintaarRafique
+#1762953
+
+import csv
+from datetime import datetime
+import collections
+
+class Student:
+
+    def __init__(self, **data):
+        self.id = data.get('id')
+        self.last_name = data.get('last_name')
+        self.first_name = data.get('first_name')
+        self.major = data.get('major')
+        self.disciplinary = data.get('disciplinary') or 'N'
+        self.gpa = float(data.get('gpa'))
+        self.graduation_date = datetime.strptime(data.get('graduation_date'), '%m/%d/%Y').date()
+
+    def has_scholarship(self):
+        return self.gpa > 3.8 and self.disciplinary != 'Y' and datetime.today().date() < self.graduation_date
+
+
+    def to_row(self, fields = None):
+        if fields is None:
+            return (self.id, self.major, self.first_name, self.last_name,
+                    self.gpa, self.graduation_date, self.disciplinary)
+
+        else:
+            return [getattr(self, field) for field in fields]
+
+    def __str__(self):
+
+        return "id: {self.id} \nfirst_name: {self.first_name} \nlast_name: {self.last_name} \nmajor: {self.major}\n" \
+               "disciplinary: {self.disciplinary} \nGPA: {self.gpa} \ngraduation date: {self.graduation_date}\n"
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class StudentList:
+
+    def __init__(self, major_file, gpa_file, grad_file):
+        self.data = collections.defaultdict(dict)
+        self.read(major_file, ('id', 'last_name', 'first_name', 'major', 'disciplinary'), 'id')
+        self.read(gpa_file, ('id', 'gpa'), 'id')
+        self.read(grad_file, ('id', 'graduation_date'), 'id')
+        self.students = [Student(**d) for d in self.data.values()]
+
+    def read(self, file, fieldnames, id_field):
+        with open(file, newline='') as csv_file:
+            reader = csv.DictReader(csv_file, fieldnames)
+            for row in reader:
+                self.data[row[id_field]].update(row)
+
+    def output(self, students, file_name, fields=None):
+        with open(file_name, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            for s in students:
+                writer.writerow(s.to_row(fields))
+
+    def output_full(self):
+        students = sorted(self.students, key=lambda x: x.last_name)
+        self.output(students, "FullRoster.csv")
+
+    def output_by_major(self):
+        data = collections.defaultdict(list)
+        for student in self.students:
+            data[student.major].append(student)
+
+        for major, students in data.items():
+            students.sort(key=lambda x: x.id)
+            self.output(
+                students,
+                "{major.replace(' ', '')}.csv",
+                ('id', 'last_name', 'first_name', 'graduation_date', 'disciplinary')
+            )
+
+    def output_scholarship(self):
+        students = sorted(filter(lambda x: x.has_scholarship(), self.students), key=lambda x: x.gpa, reverse=True)
+        self.output(
+            students, "ScholarshipCandidates.csv",
+            ('id', 'last_name', 'first_name', 'major', 'gpa')
+        )
+
+    def output_disciplined(self):
+        students = sorted(filter(lambda x: x.disciplinary == 'Y', self.students), key=lambda x: x.graduation_date)
+        self.output(
+            students,
+            "DisciplinedStudents.csv",
+            ('id', 'last_name', 'first_name', 'graduation_date')
+        )
+
+
+if __name__ == '__main__':
+
+    student_list = StudentList('StudentsMajorsList.csv','GPAList.csv','GraduationDatesList.csv')
+    for i in student_list.students:
+
+        print(i)
+
+student_list.output_by_major()
+student_list.output_full()
+student_list.output_disciplined()
+student_list.output_scholarship()
