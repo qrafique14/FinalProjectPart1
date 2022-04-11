@@ -1,14 +1,17 @@
 #QintaarRafique
 #1762953
 
+# importing all the csv files as pandas dataframes 
 import csv
 from datetime import datetime
 import collections
 
-class Student:
-
     def __init__(self, **data):
         self.id = data.get('id')
+
+#sorting data
+ 
+class Student:
         self.last_name = data.get('last_name')
         self.first_name = data.get('first_name')
         self.major = data.get('major')
@@ -16,6 +19,7 @@ class Student:
         self.gpa = float(data.get('gpa'))
         self.graduation_date = datetime.strptime(data.get('graduation_date'), '%m/%d/%Y').date()
 
+#creating gpa lowest to highest
     def has_scholarship(self):
         return self.gpa > 3.8 and self.disciplinary != 'Y' and datetime.today().date() < self.graduation_date
 
@@ -57,7 +61,7 @@ class StudentList:
             writer = csv.writer(csvfile)
             for s in students:
                 writer.writerow(s.to_row(fields))
-
+#sorting roster in order
     def output_full(self):
         students = sorted(self.students, key=lambda x: x.last_name)
         self.output(students, "FullRoster.csv")
@@ -67,6 +71,8 @@ class StudentList:
         for student in self.students:
             data[student.major].append(student)
 
+# saving a csv for each major in the majors_list
+        
         for major, students in data.items():
             students.sort(key=lambda x: x.id)
             self.output(
